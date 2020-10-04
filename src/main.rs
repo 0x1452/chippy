@@ -2,6 +2,7 @@ extern crate minifb;
 
 use chippy::chip8::Chip8;
 use chippy::display::Display;
+use io::Read;
 use std::io;
 use std::time::Duration;
 use std::{error, fs, path::Path};
@@ -9,9 +10,7 @@ use std::{error, fs, path::Path};
 use minifb::{Key, Scale, Window, WindowOptions};
 
 fn main() -> Result<(), Box<dyn error::Error>> {
-    //check_roms(&Path::new("roms"))?;
-    let mut chip8 = Chip8::new();
-    chip8.load_rom(&Path::new("roms/test_opcode.ch8"))?;
+    let mut chip8 = Chip8::new(&Path::new("roms/TETRIS"))?;
 
     let mut options = WindowOptions::default();
     options.scale = Scale::X8;
@@ -20,14 +19,28 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         panic!("{}", e);
     });
 
-    window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
+    // 60hz
+    window.limit_update_rate(Some(std::time::Duration::from_micros(16667)));
+    // slow lol
+    //window.limit_update_rate(Some(std::time::Duration::from_millis(500)));
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        chip8.run();
+        if !chip8.done() { 
+            chip8.run();
+        }
 
-        window
-            .update_with_buffer(&chip8.display.screen, 64, 32)
-            .unwrap();
+        chip8.keypad.update_keypad(window.get_keys());
+
+        if chip8.display.is_dirty {
+            window
+                .update_with_buffer(&chip8.display.screen, 64, 32)
+                .unwrap();
+            
+            chip8.display.is_dirty = false;
+        }
+        //chip8.debug_print();
+
+        //io::stdin().bytes().next();
     }
 
     Ok(())
