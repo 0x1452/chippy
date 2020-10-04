@@ -1,6 +1,3 @@
-extern crate minifb;
-
-
 pub const WIDTH: usize = 64;
 pub const HEIGHT: usize = 32;
 
@@ -9,14 +6,14 @@ const WHITE: u32 = 0x00FFFFFF;
 
 pub struct Display {
     pub screen: [u32; WIDTH * HEIGHT],
-    pub dirty: bool
+    pub is_dirty: bool
 }
 
 impl Display {
     pub fn new() -> Display {
         Display {
             screen: [BLACK; WIDTH * HEIGHT],
-            dirty: false,
+            is_dirty: false,
         }
     }
 
@@ -49,7 +46,8 @@ impl Display {
             _ => panic!(),
         };
 
-        self.dirty = true;
+        println!("DIRTIED");
+        self.is_dirty = true;
 
         collision
     }
