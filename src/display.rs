@@ -46,7 +46,6 @@ impl Display {
             _ => panic!(),
         };
 
-        println!("DIRTIED");
         self.is_dirty = true;
 
         collision
