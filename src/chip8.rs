@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::error;
 use rand::random;
-use minifb::Key;
 use crate::display::Display;
 use crate::display;
 use crate::keypad::{Keypad, FONT_SPRITES};
@@ -67,14 +66,6 @@ impl Chip8 {
         }
     }
 
-    fn write_byte(&mut self, index: usize, value: u8) {
-        self.memory[index] = value;
-    }
-
-    fn read_byte(&self, index: usize) {
-        self.memory[index];
-    }
-
     pub fn done(&self) -> bool {
         return self.memory[self.pc as usize] == 0 
             && self.memory[self.pc as usize + 1] == 0;
@@ -94,8 +85,19 @@ impl Chip8 {
         println!("Keypad = {:?}", self.keypad.keys);
     }
 
+    fn update_timers(&mut self) {
+        if self.dt > 0 {
+            self.dt -= 1;
+        }
+
+        if self.st > 0 {
+            self.st -= 1;
+        }
+    }
+
     /// Run one fetch-decode-execute cycle
     pub fn run(&mut self) {
+        self.update_timers();
         // Fetch
         let opcode: u16 = (self.memory[self.pc as usize] as u16) << 8
             | (self.memory[(self.pc + 1) as usize] as u16);
@@ -192,8 +194,8 @@ impl Chip8 {
             //  Vx = Vx - Vy
             //  VF = Vx > Vy ? 1 : 0
             (0x8, _, _, 0x5) => {
-                self.v[x] = self.v[x].overflowing_sub(self.v[y]).0;
                 self.v[0xF] = (self.v[x] > self.v[y]) as u8;
+                self.v[x] = self.v[x].overflowing_sub(self.v[y]).0;
             },
             // SHR Vx {, Vy}
             //  set VF = LSB of Vx
@@ -243,6 +245,7 @@ impl Chip8 {
             //      No idea if sprites are supposed to wrap
             (0xD, _, _, _) => {
                 let (x, y) = (self.v[x], self.v[y]);
+                let mut collision = false;
 
                 // for `op2` bytes in memory
                 for row in 0..op2 {
@@ -263,10 +266,14 @@ impl Chip8 {
                         let bit = (byte >> (7 - bit_offset)) & 1;
 
                         if bit == 1 {
-                            self.v[0xF] = self.display.toggle(coord_x, coord_y) as u8;
+                            if self.display.toggle(coord_x, coord_y) {
+                                collision = true;
+                            }
                         }
                     }
                 }
+
+                self.v[0xF] = collision as u8;
             },
             // SKP Vx
             //  Skip next instruction if key with the value of Vx is pressed
@@ -361,6 +368,7 @@ impl Chip8 {
         self.pc += 2;
     }
     
+    #[allow(dead_code)]
     fn disassemble_op(&self, opcode: u16) -> String {
         let op1 = opcode >> 12 & 0xF;
         let x = opcode >> 8 & 0xF;
