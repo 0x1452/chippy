@@ -22,18 +22,6 @@ impl Display {
     }
 
     pub fn toggle(&mut self, x: usize, y: usize) -> bool {
-        /*
-            # # # # #
-            # # # # #
-            # # # # #
-                    ^
-                                            v
-            # # # # # | # # # # # | # # # # #
-
-            (x, y) => x + WIDTH*y 
-            (4, 2) => 4 + WIDTH*2 => 4 + 10 => 14 
-        */
-
         let index = x + WIDTH * y;
         let mut collision = false;
 
